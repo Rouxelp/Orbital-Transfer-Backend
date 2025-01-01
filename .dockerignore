@@ -1,0 +1,11 @@
+﻿.git
+
+env/
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+
+.gitignore
+
+logfile.txt

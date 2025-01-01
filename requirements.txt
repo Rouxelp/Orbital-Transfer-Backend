@@ -1,0 +1,9 @@
+﻿pytest
+pydantic
+poliastro
+fastapi
+astropy
+python-dotenv
+pandas
+uvicorn
+czml3

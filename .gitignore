@@ -1,0 +1,8 @@
+﻿*.pyc
+__pycache__\
+.env
+/env/
+.DS_Store
+/.vscode/
+logfile.txt
+data/
