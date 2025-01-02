@@ -44,9 +44,10 @@ def func_calculate_transfer(orbit1: OrbitBase, orbit2: OrbitBase, sample_value: 
             delta_v1=dv1.to(u.km / u.s).value,
             delta_v2=dv2.to(u.km / u.s).value,
             time_of_flight=transfer.time_of_flight.to(u.hour).value,
-            points=points
+            points=points,
+            orbit1_id=orbit1.id,
+            orbit2_id=orbit2.id
         )
-
     except AttributeError as e:
         logger.error(f"Error: {e}")
         raise ValueError(f"Invalid orbit attributes")

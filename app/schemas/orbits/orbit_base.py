@@ -1,3 +1,4 @@
+import secrets
 from astropy import units as u
 from app.schemas.bodies.body import Body
 from app.schemas.bodies.earth import Earth
@@ -22,8 +23,10 @@ class OrbitBase:
     Includes methods for conversion to Poliastro Orbit objects,
     visualization, and logging key orbital information.
     """
+    _id_generator = iter(int(secrets.token_hex(12), 16) for _ in range(1_000_000))
+
     def __init__(self, altitude_perigee: float, altitude_apogee: float, inclination: float, 
-                 raan: float = 0.0, argp: float = 0.0, nu: float = 0.0, central_body: Optional[object] = Earth()) -> None:
+                 raan: float = 0.0, argp: float = 0.0, nu: float = 0.0, id: int = None, central_body: Optional[object] = Earth(), name: Optional[str] = None) -> None:
         """
         Args:
             altitude_perigee (float): Altitude of the perigee (in km).
@@ -33,10 +36,12 @@ class OrbitBase:
             argp (float): Argument of perigee (in degrees).
             nu (float): True anomaly (in degrees).
             central_body (str): Central body of the orbit (e.g., 'Earth').
+            name (str): Optional given name for the orbit.
         """
         if altitude_perigee >= altitude_apogee:
             raise ValueError("The perigee must be lower than the apogee.")
         
+        self.id = next(self._id_generator) if not id else id
         self.altitude_perigee = altitude_perigee * u.km
         self.altitude_apogee = altitude_apogee * u.km
         self.inclination = inclination * u.deg
@@ -45,6 +50,7 @@ class OrbitBase:
         self.nu = nu * u.deg
         self.central_body: Body = central_body
         self.poliastro_orbit: Orbit = None
+        self.name: str = name
 
         # Example: μ for Earth
         self.mu = 398600.4418 * (u.km**3 / u.s**2) if isinstance(central_body, Earth) else None
@@ -81,6 +87,7 @@ class OrbitBase:
         Includes eccentricity, period, and inclination.
         """
         poliastro_orbit = self.to_poliastro_orbit()
+        logger.info(f"Orbit - ID: {self.id}")
         logger.info(f"Orbit - Perigee Altitude: {self.altitude_perigee}")
         logger.info(f"Orbit - Apogee Altitude: {self.altitude_apogee}")
         logger.info(f"Orbit - Inclination: {self.inclination}")
@@ -159,6 +166,8 @@ class OrbitBase:
             str: Serialized JSON string.
         """
         data = {
+            "id": self.id,
+            "name": self.name if self.name else "",
             "altitude_perigee": self.altitude_perigee.to(u.km).value,
             "altitude_apogee": self.altitude_apogee.to(u.km).value,
             "inclination": self.inclination.to(u.deg).value,
@@ -184,8 +193,10 @@ class OrbitBase:
         """
         output = StringIO()
         writer = csv.writer(output)
-        writer.writerow(["altitude_perigee", "altitude_apogee", "inclination", "raan", "argp", "nu"])
+        writer.writerow(["id", "name", "altitude_perigee", "altitude_apogee", "inclination", "raan", "argp", "nu"])
         writer.writerow([
+            self.id.value, 
+            self.name if self.name else "",
             self.altitude_perigee.to(u.km).value,
             self.altitude_apogee.to(u.km).value,
             self.inclination.to(u.deg).value,
@@ -210,6 +221,8 @@ class OrbitBase:
             str: Serialized XML string.
         """
         root = ET.Element("Orbit")
+        ET.SubElement(root, "id").text = str(self.id.value)
+        ET.SubElement(root, "name").text = str(self.name.value)
         ET.SubElement(root, "altitude_perigee").text = str(self.altitude_perigee.to(u.km).value)
         ET.SubElement(root, "altitude_apogee").text = str(self.altitude_apogee.to(u.km).value)
         ET.SubElement(root, "inclination").text = str(self.inclination.to(u.deg).value)
@@ -235,13 +248,17 @@ class OrbitBase:
             OrbitBase: Reconstructed OrbitBase instance.
         """
         data = json.loads(json_str)
+        if not data.get("id", None):
+            raise ValueError("This Orbit has no id")
         return OrbitBase(
-            data["altitude_perigee"],
-            data["altitude_apogee"],
-            data["inclination"],
-            data["raan"],
-            data["argp"],
-            data["nu"]
+            data.get("id"), 
+            data.get("name", None),
+            data.get("altitude_perigee", None),
+            data.get("altitude_apogee", None),
+            data.get("inclination", None),
+            data.get("raan", None),
+            data.get("argp", None),
+            data.get("nu", None)
         )
 
     @staticmethod
@@ -264,7 +281,9 @@ class OrbitBase:
             float(values[2]),
             float(values[3]),
             float(values[4]),
-            float(values[5])
+            float(values[5]),
+            float(values[6]),
+            float(values[7])
         )
 
     @staticmethod
@@ -280,6 +299,8 @@ class OrbitBase:
         """
         root = ET.fromstring(xml_str)
         return OrbitBase(
+            float(root.find("id").text),
+            str(root.find("name").text),
             float(root.find("altitude_perigee").text),
             float(root.find("altitude_apogee").text),
             float(root.find("inclination").text),

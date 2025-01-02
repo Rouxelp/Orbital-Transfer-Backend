@@ -33,7 +33,8 @@ class HohmannTransfer(TransferType):
         super().__init__(
             name="Hohmann",
             description="A simple transfer between two coplanar circular orbits.",
-            requires_inclination_change=False
+            requires_inclination_change=False,
+            id=1
         )
 
     @staticmethod

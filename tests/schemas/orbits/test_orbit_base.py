@@ -16,6 +16,14 @@ def valid_orbit() -> OrbitBase:
         nu=10.0
     )
 
+def test_unique_orbit_ids():
+    """
+    Test to ensure that two OrbitBase objects have unique IDs.
+    """
+    orbit1 = OrbitBase(500, 40000, 28.5, raan=60.0, argp=30.0, nu=20.0)
+    orbit2 = OrbitBase(600, 41000, 30.0, raan=70.0, argp=35.0, nu=25.0)
+
+    assert orbit1.id != orbit2.id
 
 def test_orbit_to_poliastro_orbit(valid_orbit: OrbitBase) -> None:
     """

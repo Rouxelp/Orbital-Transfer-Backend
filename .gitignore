@@ -20,3 +20,12 @@ logfile.txt
 # Exclude all files inside the `data` folder except `__init__.py`
 data/*
 !data/__init__.py
+!data/orbits
+!data/trajectories
+!data/orbits/json/
+!data/orbits/xml/
+!data/orbits/csv/
+!data/trajectories/json/
+!data/trajectories/xml/
+!data/trajectories/csv/
+

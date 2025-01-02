@@ -11,8 +11,16 @@ def valid_trajectory() -> Trajectory:
         {"time": "2024-01-01T00:00:00Z", "position": [7000, 0, 0], "velocity": [0, 7.5, 0]},
         {"time": "2024-01-01T00:01:00Z", "position": [7020, 10, 5], "velocity": [0, 7.6, 0.1]},
     ]
-    return Trajectory(delta_v1=2.5, delta_v2=3.0, time_of_flight=6.5, points=points)
+    return Trajectory(delta_v1=2.5, delta_v2=3.0, time_of_flight=6.5, points=points, orbit1_id=1, orbit2_id=2)
 
+def test_unique_trajectory_ids():
+    """
+    Test to ensure that two Trajectory objects have unique IDs.
+    """
+    trajectory1 = Trajectory(delta_v1=2.5, delta_v2=3.0, time_of_flight=6.5, orbit1_id=1, orbit2_id=2)
+    trajectory2 = Trajectory(delta_v1=1.5, delta_v2=2.0, time_of_flight=4.0, orbit1_id=3, orbit2_id=4)
+
+    assert trajectory1.id != trajectory2.id
 
 def test_trajectory_to_json(valid_trajectory: Trajectory, tmp_path) -> None:
     """
