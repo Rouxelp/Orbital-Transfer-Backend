@@ -1,0 +1,94 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\title{Hohmann Transfer Calculation Process}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section*{Introduction}
+A Hohmann transfer is a highly efficient two-impulse orbital maneuver used to transfer a spacecraft between two circular orbits of different radii around the same central body. This document explains the process and calculations implemented in the \texttt{func\_calculate\_transfer} function.
+
+\section*{Key Parameters}
+Let:
+\begin{itemize}
+    \item $\mu$ be the standard gravitational parameter of the central body (in $\text{km}^3/\text{s}^2$).
+    \item $r_1$ be the radius of the initial orbit (perigee), defined as:
+    \begin{equation}
+        r_1 = R + h_1,
+    \end{equation}
+    where $R$ is the radius of the central body and $h_1$ is the altitude of the initial orbit (in $\text{km}$).
+    \item $r_2$ be the radius of the target orbit (apogee), defined similarly.
+    \item $a_t$ be the semi-major axis of the transfer orbit:
+    \begin{equation}
+        a_t = \frac{r_1 + r_2}{2}.
+    \end{equation}
+\end{itemize}
+
+\section*{Step-by-Step Process}
+\subsection*{1. Velocity Calculations}
+The velocity at different points of the orbits is calculated as follows:
+\begin{itemize}
+    \item Initial orbit velocity:
+    \begin{equation}
+        v_1 = \sqrt{\frac{\mu}{r_1}}.
+    \end{equation}
+    \item Velocity at perigee of the transfer orbit:
+    \begin{equation}
+        v_{t1} = \sqrt{\frac{2\mu}{r_1} - \frac{\mu}{a_t}}.
+    \end{equation}
+    \item Velocity at apogee of the transfer orbit:
+    \begin{equation}
+        v_{t2} = \sqrt{\frac{2\mu}{r_2} - \frac{\mu}{a_t}}.
+    \end{equation}
+    \item Final orbit velocity:
+    \begin{equation}
+        v_2 = \sqrt{\frac{\mu}{r_2}}.
+    \end{equation}
+\end{itemize}
+
+\subsection*{2. Delta-v Calculations}
+The required impulses (delta-v) for the transfer are given by:
+\begin{itemize}
+    \item First impulse at perigee of the transfer orbit:
+    \begin{equation}
+        \Delta v_1 = v_{t1} - v_1.
+    \end{equation}
+    \item Second impulse at apogee of the transfer orbit:
+    \begin{equation}
+        \Delta v_2 = v_2 - v_{t2}.
+    \end{equation}
+\end{itemize}
+
+\subsection*{3. Time of Flight}
+The time of flight for the transfer is calculated as half the orbital period of the transfer ellipse:
+\begin{equation}
+    T_{\text{flight}} = \pi \sqrt{\frac{a_t^3}{\mu}}.
+\end{equation}
+
+\subsection*{4. Trajectory Points}
+The trajectory points along the transfer orbit are sampled based on the true anomaly $\theta$, which varies from $0$ to $\pi$ during the transfer. The radius at any point is given by:
+\begin{equation}
+    r(\theta) = \frac{a_t(1 - e^2)}{1 + e \cos(\theta)},
+\end{equation}
+where $e$ is the eccentricity of the transfer orbit, calculated as:
+\begin{equation}
+    e = \frac{r_2 - r_1}{r_2 + r_1}.
+\end{equation}
+
+The position in Cartesian coordinates can then be calculated as:
+\begin{align}
+    x &= r(\theta) \cos(\theta), \\
+    y &= r(\theta) \sin(\theta).
+\end{align}
+
+\section*{Conclusion}
+The \texttt{func\_calculate\_transfer} function leverages these equations to compute the delta-v requirements, time of flight, and trajectory points for a Hohmann transfer. The results are encapsulated in a \texttt{Trajectory} object for further use.
+
+\end{document}

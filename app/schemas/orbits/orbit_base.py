@@ -3,8 +3,8 @@ from astropy import units as u
 from app.schemas.bodies.body import Body
 from app.schemas.bodies.earth import Earth
 from poliastro.twobody import Orbit
-from poliastro.plotting.static import StaticOrbitPlotter
-from poliastro.plotting.plotly import OrbitPlotter3D
+from poliastro.plotting.static import StaticOrbitPlotter # type: ignore
+from poliastro.plotting import OrbitPlotter3D
 from poliastro.czml.extract_czml import CZMLExtractor
 from astropy.time import Time
 from astropy.time import Time
@@ -48,8 +48,8 @@ class OrbitBase:
             id (int, optional): ID of the orbit if exists.
             name (str, optional): Optional given name for the orbit.
         """
-        if altitude_perigee >= altitude_apogee:
-            raise ValueError("The perigee must be lower than the apogee.")
+        if altitude_perigee > altitude_apogee:
+            raise ValueError("The perigee must be strictly lower than the apogee.")
         
         self.id = next(self._id_generator) if not id else id
         self.altitude_perigee = altitude_perigee * u.km
@@ -62,11 +62,10 @@ class OrbitBase:
         self.poliastro_orbit: Orbit = None
         self.name: str = name
 
-        # Example: μ for Earth
-        self.mu = 398600.4418 * (u.km**3 / u.s**2) if isinstance(central_body, Earth) else None
-
         # Add automatically calculated infos
-        self.semi_major_axis = (self.altitude_perigee + self.altitude_apogee) / 2
+        self.semi_major_axis = (
+            (self.altitude_perigee + self.altitude_apogee) / 2 
+        )
         self.eccentricity = ((self.altitude_apogee - self.altitude_perigee) / 
                              (self.altitude_apogee + self.altitude_perigee))
 
@@ -87,7 +86,7 @@ class OrbitBase:
             nu=self.nu
         )
         if store_poliastro:
-            if not self.poliastro_orbit:
+            if self.poliastro_orbit is None:
                 self.poliastro_orbit = poliastro_orbit
         return poliastro_orbit
     
@@ -205,7 +204,7 @@ class OrbitBase:
         writer = csv.writer(output)
         writer.writerow(["id", "name", "altitude_perigee", "altitude_apogee", "inclination", "raan", "argp", "nu"])
         writer.writerow([
-            self.id.value, 
+            self.id, 
             self.name if self.name else "",
             self.altitude_perigee.to(u.km).value,
             self.altitude_apogee.to(u.km).value,
@@ -231,8 +230,8 @@ class OrbitBase:
             str: Serialized XML string.
         """
         root = ET.Element("Orbit")
-        ET.SubElement(root, "id").text = str(self.id.value)
-        ET.SubElement(root, "name").text = str(self.name.value)
+        ET.SubElement(root, "id").text = str(self.id)
+        ET.SubElement(root, "name").text = str(self.name)
         ET.SubElement(root, "altitude_perigee").text = str(self.altitude_perigee.to(u.km).value)
         ET.SubElement(root, "altitude_apogee").text = str(self.altitude_apogee.to(u.km).value)
         ET.SubElement(root, "inclination").text = str(self.inclination.to(u.deg).value)
@@ -257,18 +256,19 @@ class OrbitBase:
         Returns:
             OrbitBase: Reconstructed OrbitBase instance.
         """
-        data = json.loads(json_str)
+        data: dict = json.loads(json_str)
         if not data.get("id", None):
             raise ValueError("This Orbit has no id")
+        
         return OrbitBase(
-            data.get("id"), 
-            data.get("name", None),
-            data.get("altitude_perigee", None),
-            data.get("altitude_apogee", None),
-            data.get("inclination", None),
-            data.get("raan", None),
-            data.get("argp", None),
-            data.get("nu", None)
+            id=int(data.get("id")),
+            name=str(data.get("name", "")),
+            altitude_perigee=float(data.get("altitude_perigee")) if data.get("altitude_perigee", None) is not None else None,
+            altitude_apogee=float(data.get("altitude_apogee")) if data.get("altitude_apogee", None) is not None else None,
+            inclination=float(data.get("inclination")) if data.get("inclination", None) is not None else None,
+            raan=float(data.get("raan")) if data.get("raan", None) is not None else None,
+            argp=float(data.get("argp")) if data.get("argp", None) is not None else None,
+            nu=float(data.get("nu")) if data.get("nu", None) is not None else None
         )
 
     @staticmethod
@@ -284,16 +284,25 @@ class OrbitBase:
         """
         reader = csv.reader(StringIO(csv_str))
         rows = list(reader)
+        if len(rows) < 2:
+            raise ValueError("CSV data is invalid or missing header and data rows")
+        
+        header = rows[0]
         values = rows[1]
+
+        data = {header[i]: values[i] for i in range(len(header))}
+        if not data.get("id", None):
+            raise ValueError("This Orbit has no id")
+        
         return OrbitBase(
-            float(values[0]),
-            float(values[1]),
-            float(values[2]),
-            float(values[3]),
-            float(values[4]),
-            float(values[5]),
-            float(values[6]),
-            float(values[7])
+            id=int(data.get("id")),
+            name=str(data.get("name", "")),
+            altitude_perigee=float(data.get("altitude_perigee")) if data.get("altitude_perigee", None) is not None else None,
+            altitude_apogee=float(data.get("altitude_apogee")) if data.get("altitude_apogee", None) is not None else None,
+            inclination=float(data.get("inclination")) if data.get("inclination", None) is not None else None,
+            raan=float(data.get("raan")) if data.get("raan", None) is not None else None,
+            argp=float(data.get("argp")) if data.get("argp", None) is not None else None,
+            nu=float(data.get("nu")) if data.get("nu", None) is not None else None
         )
 
     @staticmethod
@@ -308,13 +317,18 @@ class OrbitBase:
             OrbitBase: Reconstructed OrbitBase instance.
         """
         root = ET.fromstring(xml_str)
+
+        id_text = root.find("id").text
+        if not id_text:
+            raise ValueError("This Orbit has no id")
+
         return OrbitBase(
-            float(root.find("id").text),
-            str(root.find("name").text),
-            float(root.find("altitude_perigee").text),
-            float(root.find("altitude_apogee").text),
-            float(root.find("inclination").text),
-            float(root.find("raan").text),
-            float(root.find("argp").text),
-            float(root.find("nu").text)
+            id=int(id_text),
+            name=root.find("name").text if root.find("name") is not None and root.find("name").text else "",
+            altitude_perigee=float(root.find("altitude_perigee").text) if root.find("altitude_perigee") is not None and root.find("altitude_perigee").text else None,
+            altitude_apogee=float(root.find("altitude_apogee").text) if root.find("altitude_apogee") is not None and root.find("altitude_apogee").text else None,
+            inclination=float(root.find("inclination").text) if root.find("inclination") is not None and root.find("inclination").text else None,
+            raan=float(root.find("raan").text) if root.find("raan") is not None and root.find("raan").text else None,
+            argp=float(root.find("argp").text) if root.find("argp") is not None and root.find("argp").text else None,
+            nu=float(root.find("nu").text) if root.find("nu") is not None and root.find("nu").text else None
         )

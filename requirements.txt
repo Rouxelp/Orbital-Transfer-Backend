@@ -1,9 +1,10 @@
 ﻿pytest
 pydantic
 poliastro==0.17.0
+plotly
 fastapi
 astropy
 python-dotenv
 pandas
 uvicorn
-czml3 
+czml3==0.6.0  # Confirmed Version to use Preamble

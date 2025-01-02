@@ -1,6 +1,6 @@
 from app.schemas.trajectory_base import Trajectory
 from app.schemas.orbits.orbit_base import OrbitBase
-from app.schemas.transfer_type import TransferType
+from app.schemas.transfer_type import TransferType, TypeTransferType
 from utils.hohmann.func.calculate_transfer import func_calculate_transfer
 import numpy as np
 import plotly.graph_objects as go
@@ -10,7 +10,7 @@ from logger_handler import handle_logger
 
 logger = handle_logger()
 
-class HohmannTransferType(TransferType):
+class HohmannTransferType(TypeTransferType):
     """
     A descriptive subclass of TransferType for Hohmann Transfers.
 
@@ -31,22 +31,22 @@ class HohmannTransfer(TransferType):
         Initialize the HohmannTransfer class with specific properties.
         """
         super().__init__(
+            id=1,
             name="Hohmann",
             description="A simple transfer between two coplanar circular orbits.",
-            requires_inclination_change=False,
-            id=1
+            requires_inclination_change=False
         )
 
     @staticmethod
     def calculate_transfer(
-        orbit1: OrbitBase, orbit2: OrbitBase, sample_value: int = 100
+        initial_orbit: OrbitBase, target_orbit: OrbitBase, sample_value: int = 100
     ) -> Trajectory:
         """
         Calculate the Hohmann transfer between two orbits.
 
         Args:
-            orbit1 (OrbitBase): The initial orbit.
-            orbit2 (OrbitBase): The target orbit.
+            initial_orbit (OrbitBase): The initial orbit.
+            target_orbit (OrbitBase): The target orbit.
             sample_value (int): Number of discrete points for trajectory sampling.
 
         Returns:
@@ -54,13 +54,13 @@ class HohmannTransfer(TransferType):
         """
         try:
             # Validate that orbits are coplanar
-            if orbit1.inclination != orbit2.inclination:
+            if initial_orbit.inclination != target_orbit.inclination:
                 raise ValueError(
                     "Hohmann transfer is only valid for coplanar orbits with the same inclination."
                 )
 
             # Delegate calculation to func_calculate_transfer
-            trajectory = func_calculate_transfer(orbit1, orbit2, sample_value)
+            trajectory = func_calculate_transfer(initial_orbit, target_orbit, sample_value)
 
             # Add the transfer type to the trajectory
             trajectory.transfer_type = HohmannTransferType(
@@ -77,8 +77,8 @@ class HohmannTransfer(TransferType):
 
     @staticmethod
     def visualize_transfer(
-        orbit1: OrbitBase,
-        orbit2: OrbitBase,
+        initial_orbit: OrbitBase,
+        target_orbit: OrbitBase,
         trajectory: Trajectory,
         steps: int = 100
     ):
@@ -86,19 +86,19 @@ class HohmannTransfer(TransferType):
         Visualizes the Hohmann transfer between two orbits.
 
         Args:
-            orbit1 (OrbitBase): Initial orbit.
-            orbit2 (OrbitBase): Target orbit.
+            initial_orbit (OrbitBase): Initial orbit.
+            target_orbit (OrbitBase): Target orbit.
             trajectory (Trajectory): The calculated trajectory for the transfer.
             steps (int): Number of steps for the trajectory animation.
         """
         try:
-            # Sample points from orbit1
-            orbit1_points = orbit1.to_poliastro_orbit().sample(steps).get_xyz()
-            x1, y1, z1 = orbit1_points.to_value()
+            # Sample points from initial_orbit
+            initial_orbit_points = initial_orbit.to_poliastro_orbit().sample(steps).get_xyz()
+            x1, y1, z1 = initial_orbit_points.to_value()
 
-            # Sample points from orbit2
-            orbit2_points = orbit2.to_poliastro_orbit().sample(steps).get_xyz()
-            x2, y2, z2 = orbit2_points.to_value()
+            # Sample points from target_orbit
+            target_orbit_points = target_orbit.to_poliastro_orbit().sample(steps).get_xyz()
+            x2, y2, z2 = target_orbit_points.to_value()
 
             # Extract trajectory points
             trajectory_positions = np.array([point["position"] for point in trajectory.points])
@@ -107,7 +107,7 @@ class HohmannTransfer(TransferType):
             # Create the 3D animation
             fig = go.Figure()
 
-            # Add orbit1
+            # Add initial_orbit
             fig.add_trace(
                 go.Scatter3d(
                     x=x1,
@@ -119,7 +119,7 @@ class HohmannTransfer(TransferType):
                 )
             )
 
-            # Add orbit2
+            # Add target_orbit
             fig.add_trace(
                 go.Scatter3d(
                     x=x2,

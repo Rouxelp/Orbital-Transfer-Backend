@@ -15,21 +15,21 @@ docker build -t hohmann-transfer-app .
 Start the FastAPI server and mount the local directory as a volume to reflect code changes:
 
 ```bash
-docker run -v $(PWD):/app hohmann-transfer-app fastapi
+docker run -v ${PWD}:/app hohmann-transfer-app fastapi
 ```
 
 ## 🧪 Run Pytest
 Run tests using Pytest with the local directory mounted:
 
 ```bash
-docker run --rm -v $(PWD):/app hohmann-transfer-app pytest
+docker run -it -v ${PWD}:/app hohmann-transfer-app pytest
 ```
 
 ## 🖥️ Start a Bash Shell in the Container
 Run an interactive Bash shell for debugging:
 
 ```bash
-docker run -it -v $(PWD):/app hohmann-transfer-app bash
+docker run -it -v ${PWD}:/app hohmann-transfer-app bash
 ```
 
 ## 🛑 Stop and Remove Containers

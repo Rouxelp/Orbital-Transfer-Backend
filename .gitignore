@@ -2,7 +2,8 @@
 *.pyc
 
 # Ignore Python bytecode cache directories
-__pycache__\
+__pycache__/
+.pytest_cache/
 
 # Ignore environment files (e.g., virtualenv or dotenv)
 .env
