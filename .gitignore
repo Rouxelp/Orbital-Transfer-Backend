@@ -1,8 +1,22 @@
-﻿*.pyc
+﻿# Ignore compiled Python files
+*.pyc
+
+# Ignore Python bytecode cache directories
 __pycache__\
+
+# Ignore environment files (e.g., virtualenv or dotenv)
 .env
 /env/
+
+# Ignore macOS system files
 .DS_Store
+
+# Ignore VSCode project settings
 /.vscode/
+
+# Ignore general log files
 logfile.txt
-data/
+
+# Exclude all files inside the `data` folder except `__init__.py`
+data/*
+!data/__init__.py
