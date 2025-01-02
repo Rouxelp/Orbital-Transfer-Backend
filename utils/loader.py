@@ -13,11 +13,6 @@ for folder in [ORBIT_DIR / "json", ORBIT_DIR / "csv", ORBIT_DIR / "xml",
                TRAJECTORY_DIR / "json", TRAJECTORY_DIR / "csv", TRAJECTORY_DIR / "xml"]:
     folder.mkdir(parents=True, exist_ok=True)
 
-# Base directories for data storage
-DATA_DIR = Path("data")
-ORBIT_DIR = DATA_DIR / "orbits"
-TRAJECTORY_DIR = DATA_DIR / "trajectories"
-
 def find_file_by_id(base_dir: Path, obj_id: str) -> Optional[Path]:
     """
     Search for a file by its ID across all subdirectories and file types.

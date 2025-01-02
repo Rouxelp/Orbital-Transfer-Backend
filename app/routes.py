@@ -150,7 +150,7 @@ async def get_orbit(id: str, file_type: str = None):
     
     try:
         orbit = await load_orbit_by_id(id, file_type)
-        return {"orbit": orbit.__dict__}
+        return {"orbit": orbit.to_json()}
     except FileNotFoundError as e:
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=400)
@@ -178,8 +178,8 @@ async def get_trajectory(id: str, file_type: str = None):
             "delta_v1": float,
             "delta_v2": float,
             "time_of_flight": float,
-            "orbit1_id": int,
-            "orbit2_id": int,
+            "initial_orbit_id": int,
+            "target_orbit_id": int,
             "points": [
                 {
                     "time": str,
@@ -217,7 +217,7 @@ async def get_trajectory(id: str, file_type: str = None):
     
     try:
         trajectory = await load_trajectory_by_id(id, file_type)
-        return {"trajectory": trajectory.__dict__}
+        return {"trajectory": trajectory.to_json()}
     except FileNotFoundError as e:
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=400)
@@ -228,8 +228,8 @@ async def get_trajectory(id: str, file_type: str = None):
 
 @router.post("/transfers", response_model=dict, status_code=200)
 async def perform_transfer_calculation(
-    orbit1_index: int,
-    orbit2_index: int,
+    initial_orbit_id: int,
+    target_orbit_id: int,
     transfer_type: str = Query("hohmann", description="Type of orbital transfer"),
     file_type: str = "json"
 ):
@@ -237,8 +237,8 @@ async def perform_transfer_calculation(
     Calculate an orbital transfer between two orbits and store the trajectory.
 
     Args:
-        orbit1_index (int): Index of the initial orbit in the stored list.
-        orbit2_index (int): Index of the target orbit in the stored list.
+        initial_orbit_id (int): Index of the initial orbit in the stored list.
+        target_orbit_id (int): Index of the target orbit in the stored list.
         transfer_type (str): Type of orbital transfer (e.g., "hohmann"). Defaults to "hohmann".
         file_type (str): File format to store the trajectory (json, csv, xml). Defaults to "json".
 
@@ -253,8 +253,8 @@ async def perform_transfer_calculation(
             "delta_v1": float,
             "delta_v2": float,
             "time_of_flight": float,
-            "orbit1_id": int,
-            "orbit2_id": int,
+            "initial_orbit_id": int,
+            "target_orbit_id": int,
             "points": [
                 {
                     "time": str,
@@ -272,7 +272,7 @@ async def perform_transfer_calculation(
         ```bash
         curl -X POST "http://localhost:8000/transfers" \
             -H "Content-Type: application/json" \
-            -d '{"orbit1_index": 0, "orbit2_index": 1, "transfer_type": "hohmann"}'
+            -d '{"initial_orbit_id": 0, "target_orbit_id": 1, "transfer_type": "hohmann"}'
         ```
 
     Example (Python):
@@ -281,7 +281,7 @@ async def perform_transfer_calculation(
 
         response = requests.post(
             "http://localhost:8000/transfers",
-            json={"orbit1_index": 0, "orbit2_index": 1, "transfer_type": "hohmann"}
+            json={"initial_orbit_id": 0, "target_orbit_id": 1, "transfer_type": "hohmann"}
         )
         print(response.json())
         ```
@@ -291,7 +291,7 @@ async def perform_transfer_calculation(
         fetch("http://localhost:8000/transfers", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ "orbit1_index": 0, "orbit2_index": 1, "transfer_type": "hohmann" })
+            body: JSON.stringify({ "initial_orbit_id": 0, "target_orbit_id": 1, "transfer_type": "hohmann" })
         })
         .then(response => response.json())
         .then(data => console.log(data));
@@ -299,21 +299,17 @@ async def perform_transfer_calculation(
     """
     
     try:
-        orbits = await load_orbits(file_type)
 
-        if orbit1_index >= len(orbits) or orbit2_index >= len(orbits):
-            raise ValueError("Invalid orbit indices")
-
-        orbit1 = orbits[orbit1_index]
-        orbit2 = orbits[orbit2_index]
+        initial_orbit = await load_orbit_by_id(initial_orbit_id)
+        target_orbit = await load_orbit_by_id(target_orbit_id)
 
         if transfer_type == "hohmann":
             calculator = HohmannTransfer()
         else:
             raise ValueError(f"Transfer type '{transfer_type}' not supported")
 
-        trajectory = calculator.calculate_transfer(orbit1, orbit2)
-        file_path = TRAJECTORY_DIR / file_type / f"trajectory_{len(await load_trajectories(file_type)) + 1}.{file_type}"
+        trajectory = calculator.calculate_transfer(initial_orbit, target_orbit)
+        file_path = TRAJECTORY_DIR / file_type / f"{trajectory.id}.{file_type}"
 
         if file_type == "json":
             trajectory.to_json(filename=str(file_path))
@@ -324,7 +320,7 @@ async def perform_transfer_calculation(
         else:
             raise ValueError("Invalid file type specified.")
 
-        return {"message": "Transfer calculated successfully", "trajectory": trajectory.__dict__}
+        return {"message": "Transfer calculated successfully", "trajectory": trajectory.to_json()}
     except ValueError as e:
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=400)
@@ -424,8 +420,8 @@ async def get_trajectories(file_type: str = "json", page: int = 1, page_size: in
                 "delta_v1": float,
                 "delta_v2": float,
                 "time_of_flight": float,
-                "orbit1_id": int,
-                "orbit2_id": int,
+                "initial_orbit_id": int,
+                "target_orbit_id": int,
                 "points": [
                     {
                         "time": str,
