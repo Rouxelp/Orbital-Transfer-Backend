@@ -13,7 +13,7 @@ logger = handle_logger()
 router = APIRouter()
 
 
-@router.post("/orbit", response_model=dict, status_code=201)
+@router.post("/orbit", response_model=dict, status_code=200)
 async def create_orbit(
     altitude_perigee: float,
     altitude_apogee: float,
@@ -100,7 +100,7 @@ async def create_orbit(
         raise HTTPException(status_code=500)
 
 
-@router.get("/orbits/{id}", response_model=dict)
+@router.get("/orbits/{id}", response_model=dict, status_code=200)
 async def get_orbit(id: str, file_type: str = None):
     """
     Retrieve an orbit by its ID and optional file type.
@@ -159,7 +159,7 @@ async def get_orbit(id: str, file_type: str = None):
         raise HTTPException(status_code=500)
 
 
-@router.get("/trajectories/{id}", response_model=dict)
+@router.get("/trajectories/{id}", response_model=dict, status_code=200)
 async def get_trajectory(id: str, file_type: str = None):
     """
     Retrieve a trajectory by its ID and optional file type.
@@ -226,7 +226,7 @@ async def get_trajectory(id: str, file_type: str = None):
         raise HTTPException(status_code=500)
 
 
-@router.post("/transfers", response_model=dict, status_code=201)
+@router.post("/transfers", response_model=dict, status_code=200)
 async def perform_transfer_calculation(
     orbit1_index: int,
     orbit2_index: int,
@@ -332,7 +332,7 @@ async def perform_transfer_calculation(
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500)
     
-@router.get("/orbits", response_model=dict)
+@router.get("/orbits", response_model=dict, status_code=200)
 async def get_orbits(file_type: str = "json", page: int = 1, page_size: int = 50):
     """
     Retrieve all stored orbits in the specified format with pagination.
@@ -398,7 +398,7 @@ async def get_orbits(file_type: str = "json", page: int = 1, page_size: int = 50
         raise HTTPException(status_code=500)
 
 
-@router.get("/trajectories", response_model=dict)
+@router.get("/trajectories", response_model=dict, status_code=200)
 async def get_trajectories(file_type: str = "json", page: int = 1, page_size: int = 50):
     """
     Retrieve all stored trajectories in the specified format with pagination.
