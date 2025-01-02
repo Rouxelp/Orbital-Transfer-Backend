@@ -1,5 +1,6 @@
 import json
 import secrets
+from typing import List, Optional
 import pandas as pd
 import xml.etree.ElementTree as ET
 from io import StringIO
@@ -27,12 +28,13 @@ class Trajectory:
                  delta_v1: float, 
                  delta_v2: float, 
                  time_of_flight: float, 
-                 points=None, id: int = None, 
-                 orbit1_id: int = None, 
-                 orbit2_id: int = None,
-                 transfer_type = None,
-                 name: str = None
-                 ):
+                 points: List = [], 
+                 transfer_type: TransferType = None,
+                 id: Optional[int] = None, 
+                 orbit1_id: Optional[int] = None, 
+                 orbit2_id: Optional[int] = None,
+                 name: Optional[str] = None
+            ) -> None:
         """
         Initialize a trajectory object with delta-v values, time of flight, optional trajectory points, and orbit IDs.
 
@@ -41,8 +43,11 @@ class Trajectory:
             delta_v2 (float): Second impulse delta-v in km/s.
             time_of_flight (float): Total time of flight in hours.
             points (list, optional): Discretized trajectory points.
+            transfer_type (TransferType): Type of transfer use to compute the trajectory
+            id (int, optional): ID of the trajectory if exists. 
             orbit1_id (int, optional): ID of the initial orbit.
             orbit2_id (int, optional): ID of the target orbit.
+            name (str, optional): Name of the trajectory
         """
         self.id = next(self._id_generator) if not id else id
         self.delta_v1 = delta_v1

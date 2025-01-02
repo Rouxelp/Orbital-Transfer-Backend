@@ -25,8 +25,17 @@ class OrbitBase:
     """
     _id_generator = iter(int(secrets.token_hex(12), 16) for _ in range(1_000_000))
 
-    def __init__(self, altitude_perigee: float, altitude_apogee: float, inclination: float, 
-                 raan: float = 0.0, argp: float = 0.0, nu: float = 0.0, id: int = None, central_body: Optional[object] = Earth(), name: Optional[str] = None) -> None:
+    def __init__(self, 
+                 altitude_perigee: float, 
+                 altitude_apogee: float, 
+                 inclination: float, 
+                 raan: float = 0.0, 
+                 argp: float = 0.0, 
+                 nu: float = 0.0, 
+                 central_body: Body = Earth(), 
+                 id: Optional[int] = None, 
+                 name: Optional[str] = None
+            ) -> None:
         """
         Args:
             altitude_perigee (float): Altitude of the perigee (in km).
@@ -35,8 +44,9 @@ class OrbitBase:
             raan (float): Right ascension of the ascending node (in degrees).
             argp (float): Argument of perigee (in degrees).
             nu (float): True anomaly (in degrees).
-            central_body (str): Central body of the orbit (e.g., 'Earth').
-            name (str): Optional given name for the orbit.
+            central_body (Body): Central body of the orbit (e.g., 'Earth'). Default Earth
+            id (int, optional): ID of the orbit if exists.
+            name (str, optional): Optional given name for the orbit.
         """
         if altitude_perigee >= altitude_apogee:
             raise ValueError("The perigee must be lower than the apogee.")
