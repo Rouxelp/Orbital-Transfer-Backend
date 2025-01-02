@@ -1,9 +1,9 @@
 ﻿pytest
 pydantic
-poliastro
+poliastro==0.17.0
 fastapi
 astropy
 python-dotenv
 pandas
 uvicorn
-czml3
+czml3 

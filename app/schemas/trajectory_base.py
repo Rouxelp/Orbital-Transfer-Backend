@@ -71,18 +71,29 @@ class Trajectory:
             logger.info("No trajectory points available for 3D visualization.")
             return
 
-        # Assuming self.points is a list of dictionaries with 'position' keys
+        # Extract position and velocity vectors from trajectory points
         positions = [point["position"] for point in self.points]
-        r = [pos[0] * u.km for pos in positions]
-        v = [pos[1] * u.km / u.s for pos in positions]
+        velocities = [point["velocity"] for point in self.points]
 
-        # Create an Orbit object for plotting
+        # Convert to astropy quantities
+        r = [pos * u.km for pos in positions]
+        v = [vel * u.km / u.s for vel in velocities]
+
+        # Create an Orbit object using the first position and velocity
         orbit = Orbit.from_vectors(Earth, r[0], v[0])
 
-        plotter = OrbitPlotter3D()
-        plotter.plot(orbit, label="Trajectory")
-        plotter.set_title(title)
-        pio.show(plotter.figure)
+        # Initialize the 3D plotter and plot the trajectory
+        plotter = OrbitPlotter3D(orbit.frame)
+        fig = plotter.figure
+
+        # Plot the entire trajectory
+        plotter.plot_trajectory(orbit.sample(len(self.points)), label="Trajectory")
+
+        # Customize title
+        fig.update_layout(title=title)
+
+        # Show the plot
+        fig.show()
 
     def export_to_czml(self, filename="trajectory.czml", start_time=None, end_time=None, step_minutes=10):
         """

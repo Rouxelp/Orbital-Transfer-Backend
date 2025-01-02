@@ -62,7 +62,7 @@ class OrbitBase:
             Orbit: Poliastro Orbit object representing the current orbit.
         """
         poliastro_orbit = Orbit.from_classical(
-            self.central_body._poliastro_body,
+            self.central_body.poliastro_body,
             a=self.semi_major_axis,
             ecc=self.eccentricity,
             inc=self.inclination,
