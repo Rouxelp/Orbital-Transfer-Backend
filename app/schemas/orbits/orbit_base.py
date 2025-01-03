@@ -1,5 +1,7 @@
 import secrets
 from astropy import units as u
+from pydantic import BaseModel, Field
+from app.schemas.base_response_model import BaseResponseModel
 from app.schemas.bodies.body import Body
 from app.schemas.bodies.earth import Earth
 from poliastro.twobody import Orbit
@@ -332,3 +334,45 @@ class OrbitBase:
             argp=float(root.find("argp").text) if root.find("argp") is not None and root.find("argp").text else None,
             nu=float(root.find("nu").text) if root.find("nu") is not None and root.find("nu").text else None
         )
+
+
+class OrbitInput(BaseResponseModel):
+    altitude_perigee: float = Field(
+        ...,
+        gt=0,
+        description="Perigee altitude in kilometers. Must be a positive value."
+    )
+    altitude_apogee: float = Field(
+        ...,
+        gt=0,
+        description="Apogee altitude in kilometers. Must be a positive value."
+    )
+    inclination: float = Field(
+        ...,
+        ge=0,
+        le=180,
+        description="Orbital inclination in degrees. Must be between 0 and 180."
+    )
+    raan: Optional[float] = Field(
+        0.0,
+        ge=0,
+        le=360,
+        description="Right Ascension of the Ascending Node (RAAN) in degrees. Must be between 0 and 360. Defaults to 0.0."
+    )
+    argp: Optional[float] = Field(
+        0.0,
+        ge=0,
+        le=360,
+        description="Argument of Perigee in degrees. Must be between 0 and 360. Defaults to 0.0."
+    )
+    nu: Optional[float] = Field(
+        0.0,
+        ge=0,
+        le=360,
+        description="True anomaly in degrees. Must be between 0 and 360. Defaults to 0.0."
+    )
+    file_type: str = Field(
+        "json",
+        pattern="^(json|csv|xml)$",
+        description="File type to save the orbit. Must be one of: 'json', 'csv', or 'xml'. Defaults to 'json'."
+    )

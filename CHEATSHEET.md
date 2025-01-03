@@ -15,7 +15,7 @@ docker build -t hohmann-transfer-app .
 Start the FastAPI server and mount the local directory as a volume to reflect code changes:
 
 ```bash
-docker run -v ${PWD}:/app hohmann-transfer-app fastapi
+docker run -v ${PWD}:/app -p 8000:8000 hohmann-transfer-app fastapi
 ```
 
 ## 🧪 Run Pytest

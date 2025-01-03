@@ -18,15 +18,24 @@ __pycache__/
 # Ignore general log files
 logfile.txt
 
-# Exclude all files inside the `data` folder except `__init__.py`
+# Exclude everything inside the `data` folder
 data/*
+
+# Include specific files and folders in `data`
 !data/__init__.py
-!data/orbits
-!data/trajectories
+!data/orbits/
 !data/orbits/json/
 !data/orbits/xml/
 !data/orbits/csv/
+!data/trajectories/
 !data/trajectories/json/
 !data/trajectories/xml/
 !data/trajectories/csv/
 
+# Exclude files inside the subdirectories of `orbits` and `trajectories`
+data/orbits/json/*
+data/orbits/xml/*
+data/orbits/csv/*
+data/trajectories/json/*
+data/trajectories/xml/*
+data/trajectories/csv/*

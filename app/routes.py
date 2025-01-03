@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Query, HTTPException
 from typing import List
-from app.schemas.orbits.orbit_base import OrbitBase
+from pydantic import Field
+from app.schemas.bodies.earth import Earth
+from app.schemas.orbits.orbit_base import OrbitBase, OrbitInput
 from app.schemas.trajectory_base import Trajectory
+from app.schemas.transfer_type import TransferInput
 from utils.hohmann.hohmann_transfer import HohmannTransfer
 from logger_handler import handle_logger
 from utils.loader import ORBIT_DIR, TRAJECTORY_DIR, load_orbit_by_id, load_orbits, load_trajectories, load_trajectory_by_id
-from utils.paginate import paginate_items
+from utils.paginate import PaginatedResponse
 
 logger = handle_logger()
 
@@ -14,12 +17,8 @@ router = APIRouter()
 
 
 @router.post("/orbit", response_model=dict, status_code=200)
-async def create_orbit(
-    altitude_perigee: float,
-    altitude_apogee: float,
-    inclination: float,
-    file_type: str = "json"
-):
+async def create_orbit(input: OrbitInput):
+    #TODO: Remove the default Earth
     """
     Create a new orbit and store it in the specified format.
 
@@ -78,15 +77,15 @@ async def create_orbit(
     """
     
     try:
-        orbit = OrbitBase(altitude_perigee, altitude_apogee, inclination)
+        orbit = OrbitBase(input.altitude_perigee, input.altitude_apogee, input.inclination, input.raan, input.argp,input.nu, central_body=Earth()) # default Earth for now
 
-        file_path = ORBIT_DIR / file_type / f"{orbit.id}.{file_type}"
+        file_path = ORBIT_DIR / input.file_type / f"{orbit.id}.{input.file_type}"
 
-        if file_type == "json":
+        if input.file_type == "json":
             orbit.to_json(filename=str(file_path))
-        elif file_type == "csv":
+        elif input.file_type == "csv":
             orbit.to_csv(filename=str(file_path))
-        elif file_type == "xml":
+        elif input.file_type == "xml":
             orbit.to_xml(filename=str(file_path))
         else:
             raise ValueError("Invalid file type specified.")
@@ -100,8 +99,19 @@ async def create_orbit(
         raise HTTPException(status_code=500)
 
 
-@router.get("/orbits/{id}", response_model=dict, status_code=200)
-async def get_orbit(id: str, file_type: str = None):
+@router.get("/orbit/{id}", response_model=dict, status_code=200)
+async def get_orbit(
+    id: str = int(
+        ..., 
+        description="Unique identifier of the orbit.",
+        pattern="^\d+$"
+    ),
+    file_type: str = Query(
+        None,
+        description="File format to search for (json, csv, xml). Defaults to None.",
+        pattern="^(json|csv|xml)$"
+    )
+):
     """
     Retrieve an orbit by its ID and optional file type.
 
@@ -159,8 +169,19 @@ async def get_orbit(id: str, file_type: str = None):
         raise HTTPException(status_code=500)
 
 
-@router.get("/trajectories/{id}", response_model=dict, status_code=200)
-async def get_trajectory(id: str, file_type: str = None):
+@router.get("/trajectory/{id}", response_model=dict, status_code=200)
+async def get_trajectory(
+    id: str = int(
+        ..., 
+        description="Unique identifier of the trajectory.",
+        pattern="^\d+$"
+    ),
+    file_type: str = Query(
+        None,
+        description="File format to search for (json, csv, xml). Defaults to None.",
+        pattern="^(json|csv|xml)$"
+    )
+):
     """
     Retrieve a trajectory by its ID and optional file type.
 
@@ -227,12 +248,7 @@ async def get_trajectory(id: str, file_type: str = None):
 
 
 @router.post("/transfers", response_model=dict, status_code=200)
-async def perform_transfer_calculation(
-    initial_orbit_id: int,
-    target_orbit_id: int,
-    transfer_type: str = Query("hohmann", description="Type of orbital transfer"),
-    file_type: str = "json"
-):
+async def perform_transfer_calculation(input: TransferInput):
     """
     Calculate an orbital transfer between two orbits and store the trajectory.
 
@@ -300,22 +316,22 @@ async def perform_transfer_calculation(
     
     try:
 
-        initial_orbit = await load_orbit_by_id(initial_orbit_id)
-        target_orbit = await load_orbit_by_id(target_orbit_id)
+        initial_orbit = await load_orbit_by_id(input.initial_orbit_id)
+        target_orbit = await load_orbit_by_id(input.target_orbit_id)
 
-        if transfer_type == "hohmann":
+        if input.transfer_type == "hohmann":
             calculator = HohmannTransfer()
         else:
-            raise ValueError(f"Transfer type '{transfer_type}' not supported")
+            raise ValueError(f"Transfer type '{input.transfer_type}' not supported")
 
         trajectory = calculator.calculate_transfer(initial_orbit, target_orbit)
-        file_path = TRAJECTORY_DIR / file_type / f"{trajectory.id}.{file_type}"
+        file_path = TRAJECTORY_DIR / input.file_type / f"{trajectory.id}.{input.file_type}"
 
-        if file_type == "json":
+        if input.file_type == "json":
             trajectory.to_json(filename=str(file_path))
-        elif file_type == "csv":
+        elif input.file_type == "csv":
             trajectory.to_csv(filename=str(file_path))
-        elif file_type == "xml":
+        elif input.file_type == "xml":
             trajectory.to_xml(filename=str(file_path))
         else:
             raise ValueError("Invalid file type specified.")
@@ -328,8 +344,25 @@ async def perform_transfer_calculation(
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500)
     
-@router.get("/orbits", response_model=dict, status_code=200)
-async def get_orbits(file_type: str = "json", page: int = 1, page_size: int = 50):
+@router.get("/orbits", response_model=PaginatedResponse, status_code=200)
+async def get_orbits(
+        file_type: str = Query(
+            None,
+            description="File format to search for (json, csv, xml). Defaults to None.",
+        pattern="^(json|csv|xml)$"
+        ),
+        page: int = Field(
+            1,
+            ge=1,
+            description="The current page number, starting from 1."
+        ),
+        page_size: int = Field(
+            50,
+            ge=1,
+            le=100,
+            description="The number of items per page. Must be between 1 and 100."
+        )
+    ):
     """
     Retrieve all stored orbits in the specified format with pagination.
 
@@ -388,14 +421,31 @@ async def get_orbits(file_type: str = "json", page: int = 1, page_size: int = 50
     try:
         orbits: List[OrbitBase] = await load_orbits(file_type)
         base_url = "/orbits"
-        return paginate_items([orbit.to_json() for orbit in orbits], base_url, page=page, page_size=page_size)
+        return PaginatedResponse.paginate_items([orbit.to_json() for orbit in orbits], base_url, page=page, page_size=page_size)
     except Exception as e:
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500)
 
 
-@router.get("/trajectories", response_model=dict, status_code=200)
-async def get_trajectories(file_type: str = "json", page: int = 1, page_size: int = 50):
+@router.get("/trajectories", response_model=PaginatedResponse, status_code=200)
+async def get_trajectories(
+        file_type: str = Query(
+            None,
+            description="File format to search for (json, csv, xml). Defaults to None.",
+        pattern="^(json|csv|xml)$"
+        ),
+        page: int = Field(
+            1,
+            ge=1,
+            description="The current page number, starting from 1."
+        ),
+        page_size: int = Field(
+            50,
+            ge=1,
+            le=100,
+            description="The number of items per page. Must be between 1 and 100."
+        )
+    ):
     """
     Retrieve all stored trajectories in the specified format with pagination.
 
@@ -462,7 +512,7 @@ async def get_trajectories(file_type: str = "json", page: int = 1, page_size: in
     try:
         trajectories: List[Trajectory] = await load_trajectories(file_type)
         base_url = "/trajectories"
-        return paginate_items([trajectory.to_json() for trajectory in trajectories], base_url, page=page, page_size=page_size)
+        return PaginatedResponse.paginate_items([trajectory.to_json() for trajectory in trajectories], base_url, page=page, page_size=page_size)
     except Exception as e:
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500)

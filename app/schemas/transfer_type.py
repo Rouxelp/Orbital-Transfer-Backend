@@ -1,4 +1,5 @@
 from typing import Type
+from app.schemas.base_response_model import BaseResponseModel
 from logger_handler import handle_logger
 
 logger = handle_logger()
@@ -88,3 +89,25 @@ class TransferType():
 
         raise ValueError(f"No TransferType found with ID {id}")
 
+from pydantic import BaseModel, Field
+from typing import Literal
+
+class TransferInput(BaseResponseModel):
+    initial_orbit_id: int = Field(
+        ...,
+        description="Index of the initial orbit in the stored list. Must be a positive integer.",
+        ge=0
+    )
+    target_orbit_id: int = Field(
+        ...,
+        description="Index of the target orbit in the stored list. Must be a positive integer.",
+        ge=0
+    )
+    transfer_type: Literal["hohmann", "bi-elliptic"] = Field(
+        "hohmann",
+        description="Type of orbital transfer. Options: 'hohmann', 'bi-elliptic'. Defaults to 'hohmann'."
+    )
+    file_type: Literal["json", "csv", "xml"] = Field(
+        "json",
+        description="File format to store the trajectory. Options: 'json', 'csv', 'xml'. Defaults to 'json'."
+    )
