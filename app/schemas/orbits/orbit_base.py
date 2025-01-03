@@ -1,6 +1,7 @@
 import secrets
 from astropy import units as u
-from pydantic import BaseModel, Field
+from astropy.units import Quantity
+from pydantic import BaseModel, Field, model_validator
 from app.schemas.base_response_model import BaseResponseModel
 from app.schemas.bodies.body import Body
 from app.schemas.bodies.earth import Earth
@@ -14,8 +15,9 @@ import json
 import csv
 import xml.etree.ElementTree as ET
 from io import StringIO
-from typing import Optional
+from typing import Any, List, Optional
 from logger_handler import handle_logger
+from utils.paginate import PaginatedResponse
 
 logger = handle_logger()
 
@@ -376,3 +378,63 @@ class OrbitInput(BaseResponseModel):
         pattern="^(json|csv|xml)$",
         description="File type to save the orbit. Must be one of: 'json', 'csv', or 'xml'. Defaults to 'json'."
     )
+
+class OrbitResponse(BaseModel):
+    id: int = Field(..., example=123)
+    name: str = Field(..., example="Sample Orbit")
+    altitude_perigee: float = Field(..., example=200.0)
+    altitude_apogee: float = Field(..., example=400.0)
+    inclination: float = Field(..., example=28.5)
+    raan: Optional[float] = Field(0.0, example=0.0)
+    argp: Optional[float] = Field(0.0, example=0.0)
+    nu: Optional[float] = Field(0.0, example=0.0)
+
+class OrbitResponseWrapper(BaseModel):
+    message: str = Field(..., example="Orbit created successfully")
+    orbit: OrbitResponse 
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "Orbit created successfully",
+                "orbit": {
+                    "id": 123,
+                    "name": "Sample Orbit",
+                    "altitude_perigee": 200.0,
+                    "altitude_apogee": 400.0,
+                    "inclination": 28.5,
+                    "raan": 0.0,
+                    "argp": 0.0,
+                    "nu": 0.0
+                }
+            }
+        }
+
+class PaginatedOrbitResponseWrapper(PaginatedResponse):
+    data: List[OrbitResponse] = Field(
+        ...,
+        description="Paginated list of orbit responses.",
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "page": 1,
+                "page_size": 50,
+                "total_items": 123,
+                "total_pages": 3,
+                "next": "/orbits?page=2&page_size=50",
+                "data": [
+                    {
+                        "id": 123,
+                        "name": "Sample Orbit",
+                        "altitude_perigee": 200.0,
+                        "altitude_apogee": 400.0,
+                        "inclination": 28.5,
+                        "raan": 0.0,
+                        "argp": 0.0,
+                        "nu": 0.0,
+                    }
+                ],
+            }
+        }

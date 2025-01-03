@@ -1,19 +1,21 @@
 import json
 import secrets
-from typing import List, Optional
+from typing import Any, List, Optional
 import pandas as pd
 import xml.etree.ElementTree as ET
 from io import StringIO
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from app.schemas.bodies.earth import Earth
 from astropy.time import Time
 from astropy import units as u
+from astropy.units import Quantity
 from poliastro.plotting.static import StaticOrbitPlotter
 from poliastro.plotting import OrbitPlotter3D
 from poliastro.twobody import Orbit
 from poliastro.czml.extract_czml import CZMLExtractor
 from app.schemas.transfer_type import TransferType
 from logger_handler import handle_logger
+from utils.paginate import PaginatedResponse
 
 logger = handle_logger()
 
@@ -533,3 +535,108 @@ class Point(BaseModel):
 
         return Point(time=time, position=position, velocity=velocity)
 
+class PointResponse(BaseModel):
+    time: str = Field(..., example="2023-01-01T12:00:00Z")
+    position: List[float] = Field(..., example=[7000.0, 0.0, 0.0])
+    velocity: List[float] = Field(..., example=[0.0, 7.5, 0.0])
+
+    @model_validator(mode="after")
+    def convert_quantities(cls, values):
+        """
+        Convert Quantity fields to floats after model initialization.
+        """
+        for key, value in values.items():
+            if isinstance(value, Quantity):
+                values[key] = value.to(u.km).value  # Convert to kilometers
+        return values
+
+class TrajectoryResponse(BaseModel):
+    id: int = Field(..., example=123)
+    delta_v1: float = Field(..., example=2.5)
+    delta_v2: float = Field(..., example=1.2)
+    time_of_flight: float = Field(..., example=7200.0)
+    initial_orbit_id: int = Field(..., example=1)
+    target_orbit_id: int = Field(..., example=2)
+    points: List[PointResponse] = Field(..., example=[
+        {
+            "time": "2023-01-01T12:00:00Z",
+            "position": [7000.0, 0.0, 0.0],
+            "velocity": [0.0, 7.5, 0.0],
+        }
+    ])
+    transfer_type_id: int = Field(..., example=1)
+    name: str = Field(..., example="Hohmann Transfer")
+
+    @model_validator(mode="after")
+    def convert_quantities(cls, values):
+        """
+        Convert Quantity fields to floats after model initialization.
+        """
+        for key, value in values.items():
+            if isinstance(value, Quantity):
+                values[key] = value.to(u.km).value  # Convert to kilometers
+        return values
+
+class TrajectoryResponseWrapper(BaseModel):
+    message: str = Field(..., example="Orbit created successfully")
+    trajectory: TrajectoryResponse
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "Orbit created successfully",
+                "trajectory": {
+                    "id": 123,
+                    "delta_v1": 2.5,
+                    "delta_v2": 1.2,
+                    "time_of_flight": 7200.0,
+                    "initial_orbit_id": 1,
+                    "target_orbit_id": 2,
+                    "points": [
+                        {
+                            "time": "2023-01-01T12:00:00Z",
+                            "position": [7000.0, 0.0, 0.0],
+                            "velocity": [0.0, 7.5, 0.0]
+                        }
+                    ],
+                    "transfer_type_id": 1,
+                    "name": "Hohmann Transfer"
+                }
+            }
+        }
+
+class PaginatedTrajectoryResponseWrapper(PaginatedResponse):
+    data: List[TrajectoryResponse] = Field(
+        ...,
+        description="Paginated list of trajectory responses.",
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "page": 1,
+                "page_size": 50,
+                "total_items": 123,
+                "total_pages": 3,
+                "next": "/trajectories?page=2&page_size=50",
+                "data": [
+                    {
+                        "id": 123,
+                        "delta_v1": 2.5,
+                        "delta_v2": 1.2,
+                        "time_of_flight": 7200.0,
+                        "initial_orbit_id": 1,
+                        "target_orbit_id": 2,
+                        "points": [
+                            {
+                                "time": "2023-01-01T12:00:00Z",
+                                "position": [7000.0, 0.0, 0.0],
+                                "velocity": [0.0, 7.5, 0.0],
+                            }
+                        ],
+                        "transfer_type_id": 1,
+                        "name": "Hohmann Transfer",
+                    }
+                ],
+            }
+        }
