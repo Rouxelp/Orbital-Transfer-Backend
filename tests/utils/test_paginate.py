@@ -1,9 +1,8 @@
-from utils.paginate import paginate_items
 from utils.paginate import PaginatedResponse
 
 def test_paginate_items_with_next():
     items = list(range(1, 101))  # 100 items
-    result = paginate_items(items, "/test_endpoint", page=1, page_size=10)
+    result = PaginatedResponse.paginate_items(items, "/test_endpoint", page=1, page_size=10)
 
     assert isinstance(result, PaginatedResponse)
     assert result.total_items == 100
@@ -22,7 +21,7 @@ def test_paginate_items_with_next():
 
 def test_paginate_items_last_page():
     items = list(range(1, 101))  # 100 items
-    result = paginate_items(items, "/test_endpoint", page=10, page_size=10)
+    result = PaginatedResponse.paginate_items(items, "/test_endpoint", page=10, page_size=10)
 
     assert isinstance(result, PaginatedResponse)
     assert result.next is None  # No next page
