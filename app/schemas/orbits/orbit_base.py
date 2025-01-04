@@ -48,15 +48,12 @@ class OrbitBase:
             raan (float): Right ascension of the ascending node (in degrees).
             argp (float): Argument of perigee (in degrees).
             nu (float): True anomaly (in degrees).
-            central_body (Body):
-            if isinstance() Body, (float, int)C:
-                Body = Body * u.km
-            else:entral body of the orbit (e.g., 'Earth'). Default Earth
-            id (    int, optional): ID of the orbit if exists.
-, 'float' or 'int'            name (str, optional): Optional given name for the orbit.
+            central_body (Body): Central body of the orbit (e.g., 'Earth'). Default Earth
+            id (int, optional): ID of the orbit if exists.
+            name (str, optional): Optional given name for the orbit.
         """
         if altitude_perigee > altitude_apogee:
-            raise ValueError("The perigee must be strictly lower than the apogee.")
+            raise ValueError("The perigee must be lower than the apogee.")
         
         self.id = next(self._id_generator) if not id else id
         self._altitude_perigee = altitude_perigee * u.km
