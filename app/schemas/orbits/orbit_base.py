@@ -56,22 +56,108 @@ class OrbitBase:
             raise ValueError("The perigee must be strictly lower than the apogee.")
         
         self.id = next(self._id_generator) if not id else id
-        self.altitude_perigee = altitude_perigee * u.km
-        self.altitude_apogee = altitude_apogee * u.km
-        self.inclination = inclination * u.deg
-        self.raan = raan * u.deg
-        self.argp = argp * u.deg
-        self.nu = nu * u.deg
-        self.central_body: Body = central_body
-        self.poliastro_orbit: Orbit = None
+        self._altitude_perigee = altitude_perigee * u.km
+        self._altitude_apogee = altitude_apogee * u.km
+        self._inclination = inclination * u.deg
+        self._raan = raan * u.deg
+        self._argp = argp * u.deg
+        self._nu = nu * u.deg
+        self._central_body: Body = central_body
+        self._poliastro_orbit: Orbit = None
         self.name: str = name
 
         # Add automatically calculated infos
-        self.semi_major_axis = (
+        self._semi_major_axis = (
             (self.altitude_perigee + self.altitude_apogee) / 2 
         )
-        self.eccentricity = ((self.altitude_apogee - self.altitude_perigee) / 
+        self._eccentricity = ((self.altitude_apogee - self.altitude_perigee) / 
                              (self.altitude_apogee + self.altitude_perigee))
+
+    @property
+    def central_body(self) -> Body:
+        return self._central_body
+
+    @central_body.setter
+    def central_body(self, new_central_body):
+        self.central_body = new_central_body
+        self.poliastro_orbit = self.to_poliastro_orbit()
+    
+    
+    @property
+    def altitude_apogee(self) -> Body:
+        return self._altitude_apogee
+
+    @altitude_apogee.setter
+    def altitude_apogee(self, new_altitude_apogee):
+        self._altitude_apogee = new_altitude_apogee
+        self._poliastro_orbit = self.to_poliastro_orbit()
+    
+    @property
+    def altitude_perigee(self) -> Body:
+        return self._altitude_perigee
+
+    @altitude_perigee.setter
+    def altitude_perigee(self, new_altitude_perigee):
+        self._altitude_perigee = new_altitude_perigee
+        self._poliastro_orbit = self.to_poliastro_orbit()
+    
+    @property
+    def inclination(self) -> Body:
+        return self._inclination
+
+    @inclination.setter
+    def inclination(self, new_inclination):
+        self._inclination = new_inclination
+        self._poliastro_orbit = self.to_poliastro_orbit()
+
+    @property
+    def raan(self) -> Body:
+        return self._raan
+
+    @raan.setter
+    def raan(self, new_raan):
+        self._raan = new_raan
+        self._poliastro_orbit = self.to_poliastro_orbit()
+    
+    @property
+    def argp(self) -> Body:
+        return self._argp
+
+    @argp.setter
+    def argp(self, new_argp):
+        self._argp = new_argp
+        self._poliastro_orbit = self.to_poliastro_orbit()
+    
+    @property
+    def nu(self) -> Body:
+        return self._nu
+
+    @nu.setter
+    def nu(self, new_nu):
+        self._nu = new_nu
+        self._poliastro_orbit = self.to_poliastro_orbit()
+    
+    @property
+    def eccentricity(self) -> Body:
+        return self._eccentricity
+
+    @eccentricity.setter
+    def eccentricity(self, new_eccentricity):
+        self._eccentricity = new_eccentricity
+        self._poliastro_orbit = self.to_poliastro_orbit()
+
+    @property
+    def semi_major_axis(self) -> Body:
+        return self._semi_major_axis
+
+    @semi_major_axis.setter
+    def semi_major_axis(self, new_semi_major_axis):
+        self._semi_major_axis = new_semi_major_axis
+        self._poliastro_orbit = self.to_poliastro_orbit()
+
+    @property
+    def poliastro_orbit(self) -> Orbit:
+        return self._poliastro_orbit
 
     def to_poliastro_orbit(self, store_poliastro: bool = False) -> Orbit:
         """
