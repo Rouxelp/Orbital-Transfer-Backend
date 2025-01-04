@@ -1,7 +1,7 @@
 import secrets
 from astropy import units as u
-from astropy.units import Quantity
-from pydantic import BaseModel, Field, model_validator
+from astropy.units.quantity import Quantity
+from pydantic import BaseModel, Field
 from app.schemas.base_response_model import BaseResponseModel
 from app.schemas.bodies.body import Body
 from app.schemas.bodies.earth import Earth
@@ -48,9 +48,12 @@ class OrbitBase:
             raan (float): Right ascension of the ascending node (in degrees).
             argp (float): Argument of perigee (in degrees).
             nu (float): True anomaly (in degrees).
-            central_body (Body): Central body of the orbit (e.g., 'Earth'). Default Earth
-            id (int, optional): ID of the orbit if exists.
-            name (str, optional): Optional given name for the orbit.
+            central_body (Body):
+            if isinstance() Body, (float, int)C:
+                Body = Body * u.km
+            else:entral body of the orbit (e.g., 'Earth'). Default Earth
+            id (    int, optional): ID of the orbit if exists.
+, 'float' or 'int'            name (str, optional): Optional given name for the orbit.
         """
         if altitude_perigee > altitude_apogee:
             raise ValueError("The perigee must be strictly lower than the apogee.")
@@ -67,11 +70,8 @@ class OrbitBase:
         self.name: str = name
 
         # Add automatically calculated infos
-        self._semi_major_axis = (
-            (self.altitude_perigee + self.altitude_apogee) / 2 
-        )
-        self._eccentricity = ((self.altitude_apogee - self.altitude_perigee) / 
-                             (self.altitude_apogee + self.altitude_perigee))
+        self.refresh_eccentricity()
+        self.refresh_semi_major_axis()
 
     @property
     def central_body(self) -> Body:
@@ -79,6 +79,8 @@ class OrbitBase:
 
     @central_body.setter
     def central_body(self, new_central_body):
+        if not isinstance(new_central_body, Body):
+            raise Exception(f"Attribute type 'central_body' must be type 'Body'. Type 'central_body': {type(new_central_body)} ")
         self.central_body = new_central_body
         self.poliastro_orbit = self.to_poliastro_orbit()
     
@@ -89,7 +91,16 @@ class OrbitBase:
 
     @altitude_apogee.setter
     def altitude_apogee(self, new_altitude_apogee):
+        if not isinstance(new_altitude_apogee, Quantity):
+            if isinstance(new_altitude_apogee, (float, int)):
+                new_altitude_apogee = new_altitude_apogee * u.km
+            else: 
+                raise Exception(f"Attribute type 'altitude_apogee' must be type 'Quantity', 'float' or 'int'. Type 'altitude_apogee': {type(new_altitude_apogee)} ")
+        if new_altitude_apogee.value <= self.altitude_perigee.value:
+             raise ValueError("The apogee must be larger than the perigee.")
         self._altitude_apogee = new_altitude_apogee
+        self.refresh_eccentricity()
+        self.refresh_semi_major_axis()
         self._poliastro_orbit = self.to_poliastro_orbit()
     
     @property
@@ -98,66 +109,97 @@ class OrbitBase:
 
     @altitude_perigee.setter
     def altitude_perigee(self, new_altitude_perigee):
+        if not isinstance(new_altitude_perigee, Quantity):
+            if isinstance(new_altitude_perigee, (float, int)):
+                new_altitude_perigee = new_altitude_perigee * u.km
+            else: 
+                raise Exception(f"Attribute type 'altitude_perigee' must be type 'Quantity', 'float' or 'int'. Type 'altitude_perigee': {type(new_altitude_perigee)} ")
+        if new_altitude_perigee.value >= self.altitude_apogee.value:
+            raise ValueError("The perigee must be lower than the apogee.")
         self._altitude_perigee = new_altitude_perigee
+        self.refresh_eccentricity()
+        self.refresh_semi_major_axis()
         self._poliastro_orbit = self.to_poliastro_orbit()
     
     @property
-    def inclination(self) -> Body:
+    def inclination(self) -> float:
         return self._inclination
 
     @inclination.setter
     def inclination(self, new_inclination):
+        if not isinstance(new_inclination, Quantity):
+            if isinstance(new_inclination, (float, int)):
+                new_inclination = new_inclination * u.deg
+            else: 
+                raise Exception(f"Attribute type 'inclination' must be type 'Quantity', 'float' or 'int'. Type 'inclination': {type(new_inclination)} ")
         self._inclination = new_inclination
         self._poliastro_orbit = self.to_poliastro_orbit()
 
     @property
-    def raan(self) -> Body:
+    def raan(self) -> float:
         return self._raan
 
     @raan.setter
     def raan(self, new_raan):
+        if not isinstance(new_raan, Quantity):
+            if isinstance(new_raan, (float, int)):
+                new_raan = new_raan * u.deg
+            else: 
+                raise Exception(f"Attribute type 'raan' must be type 'Quantity', 'float' or 'int'. Type 'raan': {type(new_raan)} ")
         self._raan = new_raan
         self._poliastro_orbit = self.to_poliastro_orbit()
     
     @property
-    def argp(self) -> Body:
+    def argp(self) -> float:
         return self._argp
 
     @argp.setter
     def argp(self, new_argp):
+        if not isinstance(new_argp, Quantity):
+            if isinstance(new_argp, (float, int)):
+                new_argp = new_argp * u.deg
+            else: 
+                raise Exception(f"Attribute type 'argp' must be type 'Quantity', 'float' or 'int'. Type 'argp': {type(new_argp)} ")
         self._argp = new_argp
         self._poliastro_orbit = self.to_poliastro_orbit()
     
     @property
-    def nu(self) -> Body:
+    def nu(self) -> float:
         return self._nu
 
     @nu.setter
     def nu(self, new_nu):
+        if not isinstance(new_nu, Quantity):
+            if isinstance(new_nu, (float, int)):
+                new_nu = new_nu * u.deg
+            else: 
+                raise Exception(f"Attribute type 'nu' must be type 'Quantity', 'float' or 'int'. Type 'nu': {type(new_nu)} ")
         self._nu = new_nu
         self._poliastro_orbit = self.to_poliastro_orbit()
     
+    #* For now, we do not allowed to modify eccentricity or semi axis and then to recalculate apogee and perigee
     @property
-    def eccentricity(self) -> Body:
+    def eccentricity(self) -> float:
         return self._eccentricity
 
-    @eccentricity.setter
-    def eccentricity(self, new_eccentricity):
-        self._eccentricity = new_eccentricity
-        self._poliastro_orbit = self.to_poliastro_orbit()
-
     @property
-    def semi_major_axis(self) -> Body:
+    def semi_major_axis(self) -> float:
         return self._semi_major_axis
-
-    @semi_major_axis.setter
-    def semi_major_axis(self, new_semi_major_axis):
-        self._semi_major_axis = new_semi_major_axis
-        self._poliastro_orbit = self.to_poliastro_orbit()
 
     @property
     def poliastro_orbit(self) -> Orbit:
+        if self._poliastro_orbit is None:
+            self.to_poliastro_orbit()
         return self._poliastro_orbit
+
+    def refresh_eccentricity(self) -> None: 
+        self._eccentricity = ((self.altitude_apogee - self.altitude_perigee) / 
+                             (self.altitude_apogee + self.altitude_perigee))
+        
+    def refresh_semi_major_axis(self) -> None:
+        self._semi_major_axis = (
+            (self.altitude_perigee + self.altitude_apogee) / 2 
+        )
 
     def to_poliastro_orbit(self, store_poliastro: bool = False) -> Orbit:
         """

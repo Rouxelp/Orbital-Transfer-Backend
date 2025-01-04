@@ -161,3 +161,27 @@ def test_orbit_from_csv():
     assert orbit.argp == reconstructed_orbit.argp
     assert orbit.nu == reconstructed_orbit.nu
 
+def test_orbit_poliastro_recalculation(valid_orbit: OrbitBase) -> None:
+    """
+    Test that the Poliastro Orbit is recalculated when an attribute is modified.
+    """
+    # Generate initial Poliastro Orbit
+    initial_poliastro_orbit = valid_orbit.poliastro_orbit
+
+    # Modify an attribute (e.g., altitude_apogee)
+    new_altitude_apogee = 50000  # km
+    valid_orbit.altitude_apogee = new_altitude_apogee
+
+    # Generate updated Poliastro Orbit
+    updated_poliastro_orbit = valid_orbit.poliastro_orbit
+
+    # Ensure the orbit object has been recalculated
+    assert initial_poliastro_orbit is not updated_poliastro_orbit, "Poliastro Orbit object was not recalculated."
+    assert updated_poliastro_orbit.a.to(u.km).value == pytest.approx(
+        (valid_orbit.altitude_perigee.to(u.km).value + new_altitude_apogee) / 2, rel=1e-3
+    ), "Semi-major axis was not updated correctly."
+    assert float(updated_poliastro_orbit.ecc) == pytest.approx(
+        (new_altitude_apogee - valid_orbit.altitude_perigee.to(u.km).value) /
+        (new_altitude_apogee + valid_orbit.altitude_perigee.to(u.km).value), rel=1e-3
+    ), "Eccentricity was not updated correctly."
+

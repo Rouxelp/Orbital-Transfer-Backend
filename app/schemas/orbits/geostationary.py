@@ -26,7 +26,7 @@ class GeostationaryOrbit(OrbitBase):
         # Call the base class constructor with the geostationary parameters
         super().__init__(
             altitude_perigee=altitude,
-            altitude_apogee=altitude,
+            altitude_apogee=altitude, 
             inclination=inclination,
             raan=raan,
             argp=argp,

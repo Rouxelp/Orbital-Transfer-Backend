@@ -1,9 +1,10 @@
+from abc import ABC
 from astropy import units as u
 from logger_handler import handle_logger
 
 logger = handle_logger()
 
-class Body:
+class Body(ABC):
     """
     Base class to represent a celestial body.
     Encapsulates a Poliastro body and provides an extended interface.
