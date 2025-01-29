@@ -24,11 +24,11 @@ async def create_orbit(input: OrbitInput):
     **Request Parameters:**
     - `altitude_perigee` (float): Altitude of the perigee in km.
     - `altitude_apogee` (float): Altitude of the apogee in km.
-    - inclination: (float): Orbital inclination in degrees.
-    - raan: (float): Right Ascension of the Ascending Node (optional).
-    - argp: (float): Argument of Perigee (optional).
-    - nu: (float): True Anomaly (optional).
-    - file_type: (str: File format to store the orbit (json, csv, xml). Defaults to "json".
+    - `inclination`: (float): Orbital inclination in degrees.
+    - `raan`: (float): Right Ascension of the Ascending Node (optional).
+    - `argp`: (float): Argument of Perigee (optional).
+    - `nu`: (float): True Anomaly (optional).
+    - `file_type`: (str: File format to store the orbit (json, csv, xml). Defaults to "json".
 
     **Request Body:**
     ```json
